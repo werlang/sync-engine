@@ -1,0 +1,32 @@
+version: '3'
+services:
+    maxwell:
+        image: zendesk/maxwell:v1.40.5
+        command: "bin/maxwell --user='${MYSQL_SOURCE_USER}' --password='${MYSQL_SOURCE_PASSWORD}' --host='${MYSQL_SOURCE_HOST}' --producer='redis' --redis_host='redis' --redis_type=xadd"
+        networks:
+            - host_network
+            - default
+        depends_on:
+            - redis
+    app:
+        build: .
+        image: node:16
+        volumes:
+            - .:/app
+        env_file:
+            - .env
+        networks:
+            - host_network
+            - default
+        depends_on:
+            - redis
+        command: "node app.js"
+        # command: "tail -f /dev/null" # use this if you want an idle container to exec into
+    redis:
+        image: redis:bullseye
+        ports:
+            - "6380:6379"
+networks:
+    host_network:
+        external:
+            name: ${MYSQL_NETWORK}
